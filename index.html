@@ -109,6 +109,13 @@ input{
     margin-top:15px;
     font-weight:bold;
 }
+
+.card-footer{
+    margin-top:15px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+}
 </style>
 </head>
 
@@ -121,42 +128,10 @@ input{
     <button onclick="sortInitiative()">Sort Initiative</button>
     <button onclick="exportData()">Export Data</button>
     <button onclick="resetAllData()">Reset All Data</button>
-    <button
-        onclick="cloneCharacter(${character.id})"
-        style="
-            background:#1976d2;
-            color:white;
-        ">
-        Clone Character
-    </button>
 </div>
 
 <div id="partyContainer" class="character-grid"></div>
-
-<div style="margin-top:15px;">
-    <button onclick="
-        addResource(${character.id})
-    ">
-        + Resource
-    </button>
-
-    <button onclick="
-        addField(${character.id})
-    ">
-        + Field
-    </button>
-
-    <button
-        onclick="deleteCharacter(${character.id})"
-        style="
-            background:#c62828;
-            color:white;
-        ">
-        Delete Character
-    </button>
-</div>
-
-
+    
 <script>
 
 let party = [];
@@ -325,29 +300,39 @@ function renderParty(){
 
             ${resourcesHTML}
 
-            <button onclick="
-                addResource(${character.id})
-            ">
-                + Resource
-            </button>
-
             <div class="section-title">
                 Custom Fields
             </div>
 
             ${customFieldHTML}
 
+            <div class="card-footer">
+
+            <button onclick="
+                addResource(${character.id})
+            ">
+                + Resource
+            </button>
+        
             <button onclick="
                 addField(${character.id})
             ">
                 + Field
             </button>
-
-            <button onclick="
-                deleteCharacter(${character.id})
-            " style="background:#c62828;color:white;">
-                Delete Character
+        
+            <button
+                onclick="cloneCharacter(${character.id})"
+                style="background:#1976d2;color:white;">
+                Clone
             </button>
+        
+            <button
+                onclick="deleteCharacter(${character.id})"
+                style="background:#c62828;color:white;">
+                Delete
+            </button>
+
+</div>
         `;
 
         container.appendChild(card);
