@@ -498,7 +498,23 @@ function exportData(){
         "Character data copied to clipboard."
     );
 }
+function resetAllData() {
 
+    const confirmed = confirm(
+        "This will permanently delete all saved characters and data. Continue?"
+    );
+
+    if (!confirmed) return;
+
+    localStorage.removeItem("dndParty");
+
+    party = [];
+
+    renderParty();
+
+    alert("All campaign data has been reset.");
+}
+    
 loadData();
 renderParty();
 
