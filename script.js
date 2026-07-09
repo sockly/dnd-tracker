@@ -59,3 +59,5 @@ function renderParty() {
         container.appendChild(card);
     });
 }
+
+renderParty();
