@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>D&D Tracker</title>
+  <tyle.css
+</head>
+<body>
+
+  <div class="card">
+    <h2>Sully Suggins, MD</h2>
+    <p>HP: <span id="hp">42</span>/42</p>
+
+    <input id="damage" type="number" placeholder="Damage">
+    <button onclick="applyDamage()">Apply</button>
+  </div>
+
+  script.jsscript>
+</body>
+</html>
