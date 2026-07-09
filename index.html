@@ -121,9 +121,41 @@ input{
     <button onclick="sortInitiative()">Sort Initiative</button>
     <button onclick="exportData()">Export Data</button>
     <button onclick="resetAllData()">Reset All Data</button>
+    <button
+        onclick="cloneCharacter(${character.id})"
+        style="
+            background:#1976d2;
+            color:white;
+        ">
+        Clone Character
+    </button>
 </div>
 
 <div id="partyContainer" class="character-grid"></div>
+
+<div style="margin-top:15px;">
+    <button onclick="
+        addResource(${character.id})
+    ">
+        + Resource
+    </button>
+
+    <button onclick="
+        addField(${character.id})
+    ">
+        + Field
+    </button>
+
+    <button
+        onclick="deleteCharacter(${character.id})"
+        style="
+            background:#c62828;
+            color:white;
+        ">
+        Delete Character
+    </button>
+</div>
+
 
 <script>
 
@@ -310,6 +342,12 @@ function renderParty(){
             ">
                 + Field
             </button>
+
+            <button onclick="
+                deleteCharacter(${character.id})
+            " style="background:#c62828;color:white;">
+                Delete Character
+            </button>
         `;
 
         container.appendChild(card);
@@ -477,6 +515,62 @@ function sortInitiative(){
         (a,b)=>
             b.initiative -
             a.initiative
+    );
+
+    saveData();
+    renderParty();
+}
+
+function cloneCharacter(id) {
+
+    const original =
+        party.find(c => c.id === id);
+
+    if (!original) return;
+
+    const amount =
+        Number(
+            prompt(
+                `How many copies of ${original.name}?`,
+                1
+            )
+        );
+
+    if (!amount || amount < 1) return;
+
+    for (let i = 1; i <= amount; i++) {
+
+        const clone =
+            JSON.parse(
+                JSON.stringify(original)
+            );
+
+        clone.id =
+            Date.now() + Math.floor(Math.random() * 100000) + i;
+
+        clone.name =
+            `${original.name} #${i}`;
+
+        party.push(clone);
+    }
+
+    saveData();
+    renderParty();
+}
+    
+function deleteCharacter(id){
+
+    const character =
+        party.find(c => c.id === id);
+
+    const confirmed = confirm(
+        `Delete ${character.name}?`
+    );
+
+    if(!confirmed) return;
+
+    party = party.filter(
+        c => c.id !== id
     );
 
     saveData();
