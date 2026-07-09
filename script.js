@@ -23,3 +23,39 @@ let party = [
     customFields: []
   }
 ];
+
+function renderParty() {
+
+    const container =
+        document.getElementById("partyContainer");
+
+    container.innerHTML = "";
+
+    party.forEach(character => {
+
+        const card =
+            document.createElement("div");
+
+        card.className = "character-card";
+
+        card.innerHTML = `
+            <h2>${character.name}</h2>
+
+            <p>
+              HP:
+              ${character.hp.current}
+              /
+              ${character.hp.max}
+            </p>
+
+            <p>AC: ${character.ac}</p>
+
+            <p>
+              Initiative:
+              +${character.initiative}
+            </p>
+        `;
+
+        container.appendChild(card);
+    });
+}
