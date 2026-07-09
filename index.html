@@ -1,13 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D&D Party Tracker</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#1e1e1e;
+    color:white;
+    padding:20px;
+}
+
+h1{
+    text-align:center;
+}
+
+.controls{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+button{
+    cursor:pointer;
+    padding:8px 12px;
+    border:none;
+    border-radius:6px;
+    margin:2px;
+}
+
+.primary{
+    background:#4caf50;
+    color:white;
+}
+
+.character-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:20px;
+}
+
+.card{
+    background:#2f2f2f;
+    border-radius:12px;
+    padding:20px;
+    box-shadow:0 0 10px rgba(0,0,0,.3);
+}
+
+.stat{
+    margin:6px 0;
+}
+
+.hp-bar{
+    width:100%;
+    height:20px;
+    background:#555;
+    border-radius:10px;
+    overflow:hidden;
+    margin-top:10px;
+    margin-bottom:10px;
+}
+
+.hp-fill{
+    height:100%;
+    background:#4caf50;
+    transition:.3s;
+}
+
+.resource{
+    margin:8px 0;
+}
+
+.resource-dots{
+    display:flex;
+    gap:5px;
+    margin-top:4px;
+}
+
+.dot{
+    width:20px;
+    height:20px;
+    border-radius:50%;
+    cursor:pointer;
+    border:1px solid white;
+}
+
+.filled{
+    background:gold;
+}
+
+.empty{
+    background:transparent;
+}
+
+.custom-field{
+    margin:4px 0;
+    color:#ddd;
+}
+
+input{
+    padding:6px;
+    margin:2px;
+    width:70px;
+}
+
+.section-title{
+    margin-top:15px;
+    font-weight:bold;
+}
+</style>
+</head>
+
 <body>
 
-  <h1>D&D Party Tracker</h1>
+<h1>D&D Party Tracker</h1>
 
-  <button id="addCharacter">
-    Add Character
-  </button>
+<div class="controls">
+    <button class="primary" onclick="addCharacter()">Add Character</button>
+    <button onclick="sortInitiative()">Sort Initiative</button>
+    <button onclick="exportData()">Export Data</button>
+</div>
 
-  <div id="partyContainer"></div>
+<div id="partyContainer" class="character-grid"></div>
 
-  script.js
+<script>
+
+let party = [];
+
+function loadData() {
+    const saved = localStorage.getItem("dndParty");
+
+    if(saved){
+        party = JSON.parse(saved);
+    }
+    else{
+        party = [
+            {
+                id: Date.now(),
+                name: "Rowan",
+                hp:{
+                    current:42,
+                    max:42
+                },
+                ac:17,
+                initiative:4,
+                resources:[
+                    {
+                        name:"Spell Slots",
+                        current:3,
+                        max:4
+                    }
+                ],
+                customFields:[
+                    {
+                        label:"Passive Perception",
+                        value:"16"
+                    }
+                ]
+            }
+        ];
+
+        saveData();
+    }
+}
+
+function saveData(){
+    localStorage.setItem(
+        "dndParty",
+        JSON.stringify(party)
+    );
+}
+
+function renderParty(){
+
+    const container =
+        document.getElementById("partyContainer");
+
+    container.innerHTML = "";
+
+    party.forEach(character =>{
+
+        const hpPercent =
+            (character.hp.current /
+             character.hp.max) * 100;
+
+        let resourcesHTML = "";
+
+        character.resources.forEach((resource,index)=>{
+
+            let dotsHTML = "";
+
+            for(let i=0;i<resource.max;i++){
+
+                const filled =
+                    i < resource.current
+                    ? "filled"
+                    : "empty";
+
+                dotsHTML += `
+                    <div
+                        class="dot ${filled}"
+                        onclick="toggleResource(
+                            ${character.id},
+                            ${index},
+                            ${i}
+                        )">
+                    </div>
+                `;
+            }
+
+            resourcesHTML += `
+                <div class="resource">
+                    <strong>${resource.name}</strong>
+                    <div class="resource-dots">
+                        ${dotsHTML}
+                    </div>
+                </div>
+            `;
+        });
+
+        let customFieldHTML = "";
+
+        character.customFields.forEach(field=>{
+
+            customFieldHTML += `
+                <div class="custom-field">
+                    ${field.label}: ${field.value}
+                </div>
+            `;
+        });
+
+        const card = document.createElement("div");
+
+        card.className = "card";
+
+        card.innerHTML = `
+
+            <h2>${character.name}</h2>
+
+            <div class="stat">
+                HP: ${character.hp.current}/${character.hp.max}
+            </div>
+
+            <div class="hp-bar">
+                <div
+                    class="hp-fill"
+                    style="width:${hpPercent}%">
+                </div>
+            </div>
+
+            <div class="stat">
+                AC: ${character.ac}
+            </div>
+
+            <div class="stat">
+                Initiative: +${character.initiative}
+            </div>
+
+            <div>
+                <input
+                    id="damage-${character.id}"
+                    type="number"
+                    placeholder="DMG"
+                >
+
+                <button onclick="
+                    applyDamage(${character.id})
+                ">
+                    Damage
+                </button>
+            </div>
+
+            <div>
+                <input
+                    id="heal-${character.id}"
+                    type="number"
+                    placeholder="Heal"
+                >
+
+                <button onclick="
+                    healCharacter(${character.id})
+                ">
+                    Heal
+                </button>
+            </div>
+
+            <div class="section-title">
+                Resources
+            </div>
+
+            ${resourcesHTML}
+
+            <button onclick="
+                addResource(${character.id})
+            ">
+                + Resource
+            </button>
+
+            <div class="section-title">
+                Custom Fields
+            </div>
+
+            ${customFieldHTML}
+
+            <button onclick="
+                addField(${character.id})
+            ">
+                + Field
+            </button>
+        `;
+
+        container.appendChild(card);
+    });
+}
+
+function applyDamage(id){
+
+    const amount =
+        Number(
+            document.getElementById(
+                `damage-${id}`
+            ).value
+        );
+
+    if(!amount) return;
+
+    const character =
+        party.find(c=>c.id===id);
+
+    character.hp.current -= amount;
+
+    if(character.hp.current < 0){
+        character.hp.current = 0;
+    }
+
+    saveData();
+    renderParty();
+}
+
+function healCharacter(id){
+
+    const amount =
+        Number(
+            document.getElementById(
+                `heal-${id}`
+            ).value
+        );
+
+    if(!amount) return;
+
+    const character =
+        party.find(c=>c.id===id);
+
+    character.hp.current += amount;
+
+    if(
+        character.hp.current >
+        character.hp.max
+    ){
+        character.hp.current =
+            character.hp.max;
+    }
+
+    saveData();
+    renderParty();
+}
+
+function addCharacter(){
+
+    const name =
+        prompt("Character Name");
+
+    if(!name) return;
+
+    const maxHP =
+        Number(prompt("Max HP") || 10);
+
+    const ac =
+        Number(prompt("AC") || 10);
+
+    const initiative =
+        Number(prompt("Initiative Bonus") || 0);
+
+    party.push({
+        id:Date.now(),
+        name,
+        hp:{
+            current:maxHP,
+            max:maxHP
+        },
+        ac,
+        initiative,
+        resources:[],
+        customFields:[]
+    });
+
+    saveData();
+    renderParty();
+}
+
+function addResource(id){
+
+    const character =
+        party.find(c=>c.id===id);
+
+    const name =
+        prompt("Resource Name");
+
+    if(!name) return;
+
+    const max =
+        Number(
+            prompt("Maximum Uses") || 1
+        );
+
+    character.resources.push({
+        name,
+        current:max,
+        max
+    });
+
+    saveData();
+    renderParty();
+}
+
+function addField(id){
+
+    const character =
+        party.find(c=>c.id===id);
+
+    const label =
+        prompt("Field Name");
+
+    if(!label) return;
+
+    const value =
+        prompt("Value");
+
+    character.customFields.push({
+        label,
+        value
+    });
+
+    saveData();
+    renderParty();
+}
+
+function toggleResource(
+    characterId,
+    resourceIndex,
+    clickedIndex
+){
+
+    const character =
+        party.find(
+            c => c.id === characterId
+        );
+
+    const resource =
+        character.resources[
+            resourceIndex
+        ];
+
+    resource.current =
+        clickedIndex + 1;
+
+    saveData();
+    renderParty();
+}
+
+function sortInitiative(){
+
+    party.sort(
+        (a,b)=>
+            b.initiative -
+            a.initiative
+    );
+
+    saveData();
+    renderParty();
+}
+
+function exportData(){
+
+    const data =
+        JSON.stringify(
+            party,
+            null,
+            2
+        );
+
+    navigator.clipboard.writeText(data);
+
+    alert(
+        "Character data copied to clipboard."
+    );
+}
+
+loadData();
+renderParty();
+
+</script>
 
 </body>
+</html>
