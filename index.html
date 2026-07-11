@@ -65,8 +65,9 @@ button{
 
 .hp-fill{
     height:100%;
-    background:#4caf50;
-    transition:.3s;
+    transition:
+        width .3s,
+        background-color .3s;
 }
 
 .resource{
@@ -259,6 +260,36 @@ function renderParty(){
         const hpPercent =
             (character.hp.current /
              character.hp.max) * 100;
+
+        let hpColor = "#4caf50"; // Green
+
+
+if(character.hp.current <= 0){
+
+    hpColor = "#000000"; // Black
+
+}
+        
+else if(character.hp.current === 1){
+
+    hpColor = "#5a0000"; // Dark Red
+
+}
+else if(hpPercent < 25){
+
+    hpColor = "#c62828"; // Red
+
+}
+else if(hpPercent < 50){
+
+    hpColor = "#ef6c00"; // Orange
+
+}
+else if(hpPercent < 75){
+
+    hpColor = "#fdd835"; // Yellow
+
+}
 
         let resourcesHTML = "";
 
