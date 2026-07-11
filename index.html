@@ -487,8 +487,22 @@ function toggleResource(
             resourceIndex
         ];
 
-    resource.current =
-        clickedIndex + 1;
+    // If clicking the currently last-filled dot,
+    // decrease the resource by one.
+    if(resource.current === clickedIndex + 1){
+
+        resource.current--;
+
+    } else {
+
+        resource.current =
+            clickedIndex + 1;
+
+    }
+
+    if(resource.current < 0){
+        resource.current = 0;
+    }
 
     saveData();
     renderParty();
