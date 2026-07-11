@@ -142,7 +142,21 @@ function loadData() {
     const saved = localStorage.getItem("dndParty");
 
     if(saved){
-        party = JSON.parse(saved);
+
+    party = JSON.parse(saved);
+
+    party.forEach(character => {
+
+        if(character.spellcaster === undefined){
+            character.spellcaster = false;
+        }
+
+        if(!character.spellSlots){
+            character.spellSlots = [];
+        }
+
+    });
+
     }
     else{
         party = [
@@ -167,7 +181,9 @@ function loadData() {
                         label:"Passive Perception",
                         value:"16"
                     }
-                ]
+                ],
+                spellcaster:false,
+                spellSlots:[]
             }
         ];
 
@@ -231,6 +247,53 @@ function renderParty(){
         });
 
         let customFieldHTML = "";
+
+        let spellSlotHTML = "";
+
+if(
+    character.spellcaster &&
+    character.spellSlots &&
+    character.spellSlots.length > 0
+){
+
+    character.spellSlots.forEach((slot,index)=>{
+
+        let dotsHTML = "";
+
+        for(let i=0;i<slot.max;i++){
+
+            const filled =
+                i < slot.current
+                ? "filled"
+                : "empty";
+
+            dotsHTML += `
+                <div
+                    class="dot ${filled}"
+                    onclick="
+                        toggleSpellSlot(
+                            ${character.id},
+                            ${index},
+                            ${i}
+                        )
+                    ">
+                </div>
+            `;
+        }
+
+        spellSlotHTML += `
+            <div class="resource">
+                <strong>
+                    Level ${slot.level}
+                </strong>
+
+                <div class="resource-dots">
+                    ${dotsHTML}
+                </div>
+            </div>
+        `;
+    });
+}
 
         character.customFields.forEach(field=>{
 
@@ -297,21 +360,33 @@ function renderParty(){
             </div>
 
             <div class="section-title">
-                Spellcasting
-            </div>
+    Spellcasting
+</div>
 
-            <button onclick="
-                toggleSpellcaster(${character.id})
-            ">
-            ${
+<button
+    onclick="
+        toggleSpellcaster(
+            ${character.id}
+        )
+    "
+    style="
+        background:
+        ${
             character.spellcaster
-                ? "Disable Spellcasting"
-                : "Enable Spellcasting"
-            }
-            </button>
+            ? '#4caf50'
+            : '#777'
+        };
+        color:white;
+    "
+>
+    ${
+        character.spellcaster
+        ? "Spellcaster ✓"
+        : "Spellcaster ✗"
+    }
+</button>
 
-            ${spellSlotHTML}
-
+${spellSlotHTML}
             <div class="section-title">
                 Resources
             </div>
@@ -426,28 +501,32 @@ function addCharacter(){
         Number(prompt("Initiative Bonus") || 0);
 
     party.push({
-        id:Date.now(),
-        name,
-        hp:{
-            current:maxHP,
-            max:maxHP
-        },
-        ac,
-        initiative,
-        resources:[],
-        customFields:[]
-    });
-
-    saveData();
-    renderParty();
-}
+    id:Date.now(),
+    name,
+    hp:{
+        current:maxHP,
+        max:maxHP
+    },
+    ac,
+    initiative,
+    resources:[],
+    customFields:[],
+    spellcaster:false,
+    spellSlots:[]
+});
 
 function toggleSpellcaster(id){
 
     const character =
-        party.find(c => c.id === id);
+        party.find(
+            c => c.id === id
+        );
 
     if(!character) return;
+
+    if(!character.spellSlots){
+        character.spellSlots = [];
+    }
 
     if(character.spellcaster){
 
@@ -457,28 +536,42 @@ function toggleSpellcaster(id){
 
         character.spellcaster = true;
 
-        if(character.spellSlots.length === 0){
+        if(
+            character.spellSlots.length === 0
+        ){
 
             const levels =
                 Number(
                     prompt(
-                        "How many spell levels?"
+                        "How many spell levels should this character have?"
                     )
                 );
 
-            if(!levels) return;
+            if(!levels){
 
-            for(let i=1;i<=levels;i++){
+                character.spellcaster = false;
+
+                saveData();
+                renderParty();
+
+                return;
+            }
+
+            for(
+                let level = 1;
+                level <= levels;
+                level++
+            ){
 
                 const slots =
                     Number(
                         prompt(
-                            `How many Level ${i} slots?`
-                        )
+                            `How many Level ${level} spell slots?`
+                        ) || 0
                     );
 
                 character.spellSlots.push({
-                    level:i,
+                    level,
                     current:slots,
                     max:slots
                 });
@@ -573,6 +666,46 @@ function toggleResource(
     saveData();
     renderParty();
 }
+
+function toggleSpellSlot(
+    characterId,
+    slotIndex,
+    clickedIndex
+){
+
+    const character =
+        party.find(
+            c => c.id === characterId
+        );
+
+    if(!character) return;
+
+    const slot =
+        character.spellSlots[
+            slotIndex
+        ];
+
+    if(
+        slot.current ===
+        clickedIndex + 1
+    ){
+
+        slot.current--;
+
+    } else {
+
+        slot.current =
+            clickedIndex + 1;
+
+    }
+
+    if(slot.current < 0){
+        slot.current = 0;
+    }
+
+    saveData();
+    renderParty();
+}    
 
 function sortInitiative(){
 
