@@ -290,6 +290,12 @@ else if(hpPercent < 75){
     hpColor = "#fdd835"; // Yellow
 
 }
+    
+else if(hpPercent >= 75){
+
+    hpColor = "#4caf50"; // Yellow
+
+}
 
         let resourcesHTML = "";
 
@@ -397,10 +403,13 @@ if(
             </div>
 
             <div class="hp-bar">
-                <div
-                    class="hp-fill"
-                    style="width:${hpPercent}%">
-                </div>
+            <div
+                class="hp-fill"
+                style="
+                    width:${hpPercent}%;
+                    background:${hpColor};
+                ">
+            </div>
             </div>
 
             <div class="stat">
