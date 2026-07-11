@@ -297,6 +297,22 @@ function renderParty(){
             </div>
 
             <div class="section-title">
+                Spellcasting
+            </div>
+
+            <button onclick="
+                toggleSpellcaster(${character.id})
+            ">
+            ${
+            character.spellcaster
+                ? "Disable Spellcasting"
+                : "Enable Spellcasting"
+            }
+            </button>
+
+            ${spellSlotHTML}
+
+            <div class="section-title">
                 Resources
             </div>
 
@@ -425,6 +441,54 @@ function addCharacter(){
     saveData();
     renderParty();
 }
+
+function toggleSpellcaster(id){
+
+    const character =
+        party.find(c => c.id === id);
+
+    if(!character) return;
+
+    if(character.spellcaster){
+
+        character.spellcaster = false;
+
+    } else {
+
+        character.spellcaster = true;
+
+        if(character.spellSlots.length === 0){
+
+            const levels =
+                Number(
+                    prompt(
+                        "How many spell levels?"
+                    )
+                );
+
+            if(!levels) return;
+
+            for(let i=1;i<=levels;i++){
+
+                const slots =
+                    Number(
+                        prompt(
+                            `How many Level ${i} slots?`
+                        )
+                    );
+
+                character.spellSlots.push({
+                    level:i,
+                    current:slots,
+                    max:slots
+                });
+            }
+        }
+    }
+
+    saveData();
+    renderParty();
+}    
 
 function addResource(id){
 
