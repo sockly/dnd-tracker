@@ -52,6 +52,20 @@ button{
     margin:6px 0;
 }
 
+.conditions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:8px;
+}
+
+.condition{
+    padding:3px 8px;
+    border-radius:15px;
+    font-size:12px;
+    color:white;
+}
+
 .hp-bar{
     width:100%;
     max-width:1000px;
@@ -162,6 +176,17 @@ input{
     font-weight:bold;
 }
 
+.section-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    cursor:pointer;
+}
+
+.carrot{
+    font-weight:bold;
+}    
+
 .card-footer{
     margin-top:15px;
     display:flex;
@@ -174,10 +199,11 @@ input{
 <body>
 
 <h1>D&D Party Tracker</h1>
-
+     
 <div class="controls">
     <button class="primary" onclick="addCharacter()">Add Character</button>
     <button onclick="sortInitiative()">Sort Initiative</button>
+    <button onclick="longRestAll()">Long Rest</button>
     <button onclick="exportData()">Export Data</button>
     <button onclick="resetAllData()">Reset All Data</button>
 </div>
@@ -186,6 +212,8 @@ input{
     
 <script>
 
+//Default Character//
+    
 let party = [];
 
 function loadData() {
@@ -195,18 +223,41 @@ function loadData() {
 
     party = JSON.parse(saved);
 
-    party.forEach(character => {
+party.forEach(character => {
 
-        if(character.spellcaster === undefined){
-            character.spellcaster = false;
-        }
+    if(character.spellcaster === undefined){
+        character.spellcaster = false;
+    }
 
-        if(!character.spellSlots){
-            character.spellSlots = [];
-        }
+    if(!character.spellSlots){
+        character.spellSlots = [];
+    }
 
-    });
+    if(!character.conditions){
+        character.conditions = [];
+    }
 
+    if(!character.deathSaves){
+        character.deathSaves = [
+            false,
+            false,
+            false
+        ];
+    }
+
+    if(!character.collapsed){
+        character.collapsed = {
+            spellcasting:false,
+            resources:false,
+            customFields:false,
+            footer:false
+        };
+    }
+
+});
+
+        saveData();
+        
     }
     else{
         party = [
@@ -233,7 +284,18 @@ function loadData() {
                     }
                 ],
                 spellcaster:false,
-                spellSlots:[]
+                spellSlots:[],
+                
+                conditions: [],
+                deathSaves: [false, false, false],
+
+                collapsed: {
+                    spellcasting: false,
+                    resources: false,
+                    customFields: false,
+                    footer: false
+                    }
+                }
             }
         ];
 
@@ -247,7 +309,7 @@ function saveData(){
         JSON.stringify(party)
     );
 }
-
+    
 function renderParty(){
 
     const container =
@@ -257,6 +319,79 @@ function renderParty(){
 
     party.forEach(character =>{
 
+    let conditionHTML = "";
+
+character.conditions.forEach(
+(condition,index)=>{
+
+conditionHTML += `
+<div
+    class="condition"
+    style="
+        background:${condition.color}
+    "
+>
+    ${condition.name}
+
+    <span
+        style="
+            cursor:pointer;
+            margin-left:5px;
+        "
+        onclick="
+    event.stopPropagation();
+    removeCondition(
+        ${character.id},
+        ${index}
+    )
+"
+    >
+        ✕
+    </span>
+</div>
+`;
+});
+
+let deathSaveHTML = "";
+
+if(character.hp.current <= 0){
+
+    deathSaveHTML = `
+    <div class="section-title">
+        Death Saves
+    </div>
+
+    <div class="resource-dots">
+
+        ${
+            character.deathSaves
+            .map(
+                (filled,index)=>`
+            <div
+                class="
+                    dot
+                    ${
+                        filled
+                        ? "filled"
+                        : "empty"
+                    }
+                "
+                onclick="
+                    toggleDeathSave(
+                        ${character.id},
+                        ${index}
+                    )
+                "
+            ></div>
+            `
+            )
+            .join("")
+        }
+
+    </div>
+    `;
+}
+        
         const hpPercent =
             (character.hp.current /
              character.hp.max) * 100;
@@ -325,6 +460,19 @@ else if(hpPercent >= 75){
             resourcesHTML += `
                 <div class="resource">
                     <strong>${resource.name}</strong>
+
+<button
+    style="background:#c62828;color:white;"
+    onclick="
+        removeResource(
+            ${character.id},
+            ${index}
+        )
+    "
+>
+    ✕
+</button>
+
                     <div class="resource-dots">
                         ${dotsHTML}
                     </div>
@@ -332,7 +480,7 @@ else if(hpPercent >= 75){
             `;
         });
 
-        let customFieldHTML = "";
+        let customFieldsHTML = "";
 
         let spellSlotHTML = "";
 
@@ -381,15 +529,31 @@ if(
     });
 }
 
-        character.customFields.forEach(field=>{
+        character.customFields.forEach((field,index)=>{
 
-            customFieldHTML += `
-                <div class="custom-field">
-                    ${field.label}: ${field.value}
-                </div>
-            `;
+            customFieldsHTML += `
+<div class="custom-field">
+    ${field.label}: ${field.value}
+
+    <button
+        style="
+            background:#c62828;
+            color:white;
+            margin-left:5px;
+        "
+        onclick="
+            removeField(
+                ${character.id},
+                ${index}
+            )
+        "
+    >
+        ✕
+    </button>
+</div>
+`;
         });
-
+        
         const card = document.createElement("div");
 
         card.className = "card";
@@ -397,6 +561,12 @@ if(
         card.innerHTML = `
 
             <h2>${character.name}</h2>
+            
+            <div class="conditions">
+                ${conditionHTML}
+            </div>
+
+            <button onclick="addCondition(${character.id})">+</button>
 
             <div class="stat">
                 HP: ${character.hp.current}/${character.hp.max}
@@ -411,6 +581,8 @@ if(
                 ">
             </div>
             </div>
+            
+            ${deathSaveHTML}
 
             <div class="stat">
                 AC: ${character.ac}
@@ -448,8 +620,25 @@ if(
                 </button>
             </div>
 
-<div class="section-title">Spellcasting</div>
+<div
+    class="section-header"
+    onclick="
+        toggleSection(${character.id},'spellcasting')
+    ">
+    <span>Spellcasting</span>
 
+    <span class="carrot">
+        ${
+            character.collapsed.spellcasting
+            ? "▶"
+            : "▼"
+        }
+    </span>
+</div>
+
+${
+!character.collapsed.spellcasting
+? `
 <div class="toggle-row">
 
     <span>
@@ -481,17 +670,60 @@ if(
 </div>
 
 ${spellSlotHTML}
-            <div class="section-title">
-                Resources
-            </div>
+`
+: ""
+}
+            <div
+    class="section-header"
+    onclick="
+        toggleSection(
+            ${character.id},
+            'resources'
+        )
+    "
+>
+    <span>Resources</span>
 
-            ${resourcesHTML}
+    <span class="carrot">
+        ${
+            character.collapsed.resources
+            ? "▶"
+            : "▼"
+        }
+    </span>
+</div>
 
-            <div class="section-title">
-                Custom Fields
-            </div>
+${
+    !character.collapsed.resources
+    ? resourcesHTML
+    : ""
+}
 
-            ${customFieldHTML}
+            <div
+    class="section-header"
+    onclick="
+        toggleSection(
+            ${character.id},
+            'customFields'
+        )
+    "
+>
+    <span>Custom Fields</span>
+
+    <span class="carrot">
+        ${
+            character.collapsed.customFields
+            ? "▶"
+            : "▼"
+        }
+    </span>
+</div>
+
+${
+    !character.collapsed.customFields
+    ? customFieldsHTML
+    : ""
+}
 
             <div class="card-footer">
 
@@ -578,6 +810,8 @@ function healCharacter(id){
     renderParty();
 }
 
+// New Character //
+    
 function addCharacter(){
 
     const name =
@@ -606,7 +840,18 @@ function addCharacter(){
     resources:[],
     customFields:[],
     spellcaster:false,
-    spellSlots:[]
+    spellSlots:[],
+    conditions: [],
+    deathSaves: [
+        false, 
+        false, 
+        false],
+    collapsed: {
+        spellcasting: false,
+        resources: false,
+        customFields: false,
+        footer: false
+    }
 });
   
 saveData();
@@ -614,6 +859,69 @@ renderParty();
 
 }
 
+function addCondition(id){
+
+    const name =
+        prompt("Condition");
+
+    if(!name) return;
+
+    const color =
+        prompt(
+            "Color (hex)",
+            "#f44336"
+        );
+
+    const character =
+        party.find(
+            c=>c.id===id
+        );
+
+    character.conditions.push({
+        name,
+        color
+    });
+
+    saveData();
+    renderParty();
+}    
+
+function removeCondition(
+    id,
+    index
+){
+
+    const character =
+        party.find(
+            c=>c.id===id
+        );
+
+    character.conditions.splice(
+        index,
+        1
+    );
+
+    saveData();
+    renderParty();
+}
+
+function toggleDeathSave(
+    id,
+    index
+){
+
+    const character =
+        party.find(
+            c=>c.id===id
+        );
+
+    character.deathSaves[index] =
+        !character.deathSaves[index];
+
+    saveData();
+    renderParty();
+}    
+    
 function toggleSpellcaster(id){
 
     const character =
@@ -729,6 +1037,17 @@ function addField(id){
     renderParty();
 }
 
+function removeField(id,index){
+
+    const character =
+        party.find(c=>c.id===id);
+
+    character.customFields.splice(index,1);
+
+    saveData();
+    renderParty();
+}
+    
 function toggleResource(
     characterId,
     resourceIndex,
@@ -766,6 +1085,23 @@ function toggleResource(
     renderParty();
 }
 
+function toggleSection(
+    characterId,
+    section
+){
+
+    const character =
+        party.find(
+            c=>c.id===characterId
+        );
+
+    character.collapsed[section] =
+        !character.collapsed[section];
+
+    saveData();
+    renderParty();
+}
+    
 function toggleSpellSlot(
     characterId,
     slotIndex,
@@ -806,6 +1142,17 @@ function toggleSpellSlot(
     renderParty();
 }    
 
+function removeResource(id,index){
+
+    const character =
+        party.find(c=>c.id===id);
+
+    character.resources.splice(index,1);
+
+    saveData();
+    renderParty();
+}
+    
 function sortInitiative(){
 
     party.sort(
@@ -869,6 +1216,40 @@ function deleteCharacter(id){
     party = party.filter(
         c => c.id !== id
     );
+
+    saveData();
+    renderParty();
+}
+
+function longRestAll() {
+
+    const confirmed = confirm(
+        "Perform a long rest for all characters?"
+    );
+
+    if(!confirmed) return;
+
+    party.forEach(character => {
+
+        character.hp.current =
+            character.hp.max;
+
+        // Resources
+        character.resources.forEach(resource => {
+            resource.current = resource.max;
+        });
+
+        // Spell Slots
+        if(character.spellSlots){
+            character.spellSlots.forEach(slot => {
+                slot.current = slot.max;
+            });
+        }
+
+        // Death Saves
+        character.deathSaves =
+            [false, false, false];
+    });
 
     saveData();
     renderParty();
